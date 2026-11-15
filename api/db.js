@@ -1,4 +1,5 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
+// import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -26,6 +27,11 @@ export const query = (text, params) => pool.query(text, params);
  * Takes a callback function `fn(client)` and runs it inside a transaction block.
  * Handles client acquisition, BEGIN, COMMIT, ROLLBACK, and release.
  */
+/*
+ Atomic operations ke liye (e.g., order create karte waqt multiple inserts, ya status update ke saath stock modify).
+
+Why needed? Agar ek step fail ho jaye, toh poori transaction rollback ho jaye aur database consistent rahe.
+*/
 export const runTransaction = async (callback) => {
   const client = await pool.connect();
   try {
@@ -93,6 +99,18 @@ CREATE TABLE IF NOT EXISTS order_items (
 /**
  * Auto-initialize the database schema and seed initial test data.
  */
+/*
+Pehli baar jab koi API call aati hai, yeh function automatically run hota hai (lazy initialization).
+
+Schema creation: Tables users, products, orders, order_items agar exist nahi karte toh create karta hai.
+
+Constraints upgrade: Dynamic ALTER TABLE daal kar seller_id column aur role check update karta hai.
+
+Seeding: Agar tables empty hain, toh default users (admin@... / seller@...) aur 5 chemical products insert karta hai.
+
+*/
+
+
 export const initDb = async () => {
   try {
     console.log('Initializing database schema...');
@@ -204,3 +222,13 @@ export const initDb = async () => {
     console.error('Error initializing database:', err);
   }
 };
+
+/*
+Ye setup ek cloud Neon PostgreSQL
+ database ko Node.js serverless environment 
+ mein WebSocket ke through connect karta hai, 
+ schema auto‑initialize karta hai, 
+ default users/products seed karta hai, 
+ aur transaction helper provide karta hai 
+ taaki order workflows atomic aur consistent rahe.
+*/

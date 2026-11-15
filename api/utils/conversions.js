@@ -77,3 +77,7 @@ export const calculateItemTotal = (quantity, orderUnit, baseUnit, basePrice) => 
 
   return Math.round(total * 100) / 100;
 };
+
+
+// base_quantity = ordered_quantity × conversion_factor
+// item_total = base_quantity × base_price

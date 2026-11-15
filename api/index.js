@@ -640,9 +640,23 @@ app.get('/api/admin/stats', authenticateToken, requireRole('admin'), async (req,
 // ==========================================
 const PORT = process.env.PORT || 5000;
 if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`[AasaMedChem Backend] Server running on port ${PORT}`);
   });
 }
 
 export default app;
+
+/*
+1. POST /api/auth/login { email: "seller@aasamedchem.com", password: "seller123" }
+2. Backend DB se user fetch karta hai → password_hash milta hai: "$2a$10$N9qo8uLOickgx2ZMRZoMy.MrUo9RcYIqF5ZqXzO5JqWq6Z5j5Y5iS"
+3. bcrypt.compare("seller123", storedHash) → true
+4. Ab user verified hai, to JWT token generate hota hai using secret key.
+5. Token bheja jata hai: { token: "eyJhbGciOiJIUzI1NiIs..." }
+6. Client token save karta hai localStorage mein.
+7. Next request (e.g., GET /api/products) mein header bhejta hai: Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+8. Backend jwt.verify(token, SECRET) → success, req.user set hota hai (id, email, role)
+9. Request process hoti hai.
+
+*/
+

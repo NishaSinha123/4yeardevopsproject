@@ -3,10 +3,13 @@ import { API_BASE } from '../config';
 
 const AuthContext = createContext(null);
 
+/*
+context api context create(global container create karna) provider(data supply karta hai) consume(data receive krta hai )
+*/
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('aasa_token'));
-  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('aasa_token')); //token:local strorage se read ho rha hai to wahi token use hoga
+  const [loading, setLoading] = useState(true); //loading true jab tak nhi hoga  backend se token verify nhi kar lete 
 
   // Check auth status on mount
   useEffect(() => {
@@ -42,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [token]);
 
+  //Backend se token receive karta hai, localStorage save karta hai, state update karta hai.
   const handleLogin = async (email, password) => {
     const response = await fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
