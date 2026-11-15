@@ -1,5 +1,6 @@
 services:
   backend:
+    image: aasamedchem-backend:latest
     build:
       context: .
       dockerfile: api/Dockerfile
@@ -15,6 +16,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: aasamedchem-frontend:latest
     build:
       context: .
       dockerfile: Dockerfile
