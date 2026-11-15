@@ -130,13 +130,15 @@ pipeline {
         }
         always {
             echo 'Cleaning up dangling Docker images...'
-            node {
-                script {
+            script {
+                try {
                     if (isUnix()) {
                         sh 'docker image prune -f || true'
                     } else {
                         bat 'docker image prune -f 2>nul || exit 0'
                     }
+                } catch (Exception e) {
+                    echo "Docker prune step skipped: ${e.message}"
                 }
             }
         }
