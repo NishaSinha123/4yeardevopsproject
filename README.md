@@ -286,3 +286,4 @@ To view diagrams and maintain style consistency throughout development, install 
 3.  **ESLint**: Inspects code for potential bugs, missing React hooks, and syntax inconsistencies matching the rules in `eslint.config.js`.
 4.  **Postman** / **Thunder Client**: For testing REST API routes directly inside VS Code.
 5.  **PostgreSQL Explorer**: Connects to the Neon database instance to inspect user tables, products, and checkouts logs.
+"# 4yeardevopsproject" 
