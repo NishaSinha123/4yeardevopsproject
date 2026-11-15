@@ -55,13 +55,13 @@ pipeline {
                 echo 'Deploying application using Docker Compose...'
                 script {
                     if (isUnix()) {
-                        // Ensure .env exists in CI workspace
                         sh 'cp .env.example .env'
+                        sh 'docker rm -f aasamedchem-backend aasamedchem-frontend || true'
                         sh 'docker compose down || true'
                         sh 'docker compose up -d'
                     } else {
-                        // On Windows Jenkins agent, overwrite .env with valid credentials
                         bat 'copy /Y .env.example .env'
+                        bat 'docker rm -f aasamedchem-backend aasamedchem-frontend 2>nul || exit 0'
                         bat 'docker compose down'
                         bat 'docker compose up -d'
                     }
