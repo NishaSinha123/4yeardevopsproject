@@ -15,6 +15,22 @@ const app = express();
 app.use(cors()); // Allow cross-origin requests from our Vite frontend dev server
 app.use(express.json()); // Parse incoming JSON payloads automatically
 
+// Root health check endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'AasaMedChem Backend API',
+    database: process.env.DATABASE_URL ? 'Configured' : 'NOT SET'
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'AasaMedChem Backend API'
+  });
+});
+
 // Lazy Database Initializer Middleware
 // This checks if the schema is verified and seeded on the very first incoming request.
 // It avoids timing conflicts and keeps the startup flow extremely smooth.

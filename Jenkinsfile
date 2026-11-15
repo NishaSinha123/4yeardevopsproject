@@ -5,7 +5,8 @@ pipeline {
         BACKEND_IMAGE   = "aasamedchem-backend"
         FRONTEND_IMAGE  = "aasamedchem-frontend"
         IMAGE_TAG       = "${BUILD_NUMBER}"
-        DOCKER_HUB_USER = "your-dockerhub-username"
+        DATABASE_URL    = "postgresql://neondb_owner:npg_aTJ8X7owxmEi@ep-cold-thunder-aqpr7whh-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require"
+        JWT_SECRET      = "AasaMedChem_Secure_Jwt_Token_Secret_Key_2026"
     }
 
     stages {
@@ -55,12 +56,12 @@ pipeline {
                 script {
                     if (isUnix()) {
                         // Ensure .env exists in CI workspace
-                        sh 'if [ ! -f .env ]; then cp .env.example .env; fi'
+                        sh 'cp .env.example .env'
                         sh 'docker compose down || true'
                         sh 'docker compose up -d'
                     } else {
-                        // On Windows Jenkins agent, create .env from .env.example if missing
-                        bat 'if not exist .env copy .env.example .env'
+                        // On Windows Jenkins agent, overwrite .env with valid credentials
+                        bat 'copy /Y .env.example .env'
                         bat 'docker compose down'
                         bat 'docker compose up -d'
                     }

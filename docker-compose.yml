@@ -1,36 +1,9 @@
-# services:
-#   backend:
-#     build:
-#       context: .
-#       dockerfile: api/Dockerfile
-#     container_name: aasamedchem-backend
-#     ports:
-#       - "5000:5000"
-#     env_file:
-#       - path: .env
-#         required: false
-#     environment:
-#       - PORT=5000
-#     restart: unless-stopped
-
-#   frontend:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile
-#     container_name: aasamedchem-frontend
-#     ports:
-#       - "3000:80"
-#     depends_on:
-#       - backend
-#     restart: unless-stopped
-
-
-
 services:
   backend:
     build:
       context: .
       dockerfile: api/Dockerfile
+    container_name: aasamedchem-backend
     ports:
       - "5001:5000"
     env_file:
@@ -38,12 +11,15 @@ services:
         required: false
     environment:
       - PORT=5000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_aTJ8X7owxmEi@ep-cold-thunder-aqpr7whh-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require}
+      - JWT_SECRET=${JWT_SECRET:-AasaMedChem_Secure_Jwt_Token_Secret_Key_2026}
     restart: unless-stopped
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: aasamedchem-frontend
     ports:
       - "3001:80"
     depends_on:
