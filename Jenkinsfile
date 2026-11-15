@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        BACKEND_IMAGE  = "aasamedchem-backend"
-        FRONTEND_IMAGE = "aasamedchem-frontend"
-        IMAGE_TAG      = "${BUILD_NUMBER}"
-        // Set your Docker Hub username here if you want to push images
+        BACKEND_IMAGE   = "aasamedchem-backend"
+        FRONTEND_IMAGE  = "aasamedchem-frontend"
+        IMAGE_TAG       = "${BUILD_NUMBER}"
         DOCKER_HUB_USER = "your-dockerhub-username"
     }
 
@@ -50,41 +49,20 @@ pipeline {
             }
         }
 
-        /* 
-        // OPTIONAL: Uncomment this stage if you need to push images to Docker Hub
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-                        if (isUnix()) {
-                            sh 'echo $DH_PASS | docker login -u $DH_USER --password-stdin'
-                            sh "docker tag ${BACKEND_IMAGE}:latest ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:latest"
-                            sh "docker tag ${FRONTEND_IMAGE}:latest ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:latest"
-                            sh "docker push ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:latest"
-                            sh "docker push ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:latest"
-                        } else {
-                            bat 'echo %DH_PASS% | docker login -u %DH_USER% --password-stdin'
-                            bat "docker tag ${BACKEND_IMAGE}:latest ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:latest"
-                            bat "docker tag ${FRONTEND_IMAGE}:latest ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:latest"
-                            bat "docker push ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:latest"
-                            bat "docker push ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:latest"
-                        }
-                    }
-                }
-            }
-        }
-        */
-
         stage('Deploy with Docker Compose') {
             steps {
                 echo 'Deploying application using Docker Compose...'
                 script {
                     if (isUnix()) {
+                        // Ensure .env exists in CI workspace
+                        sh 'if [ ! -f .env ]; then cp .env.example .env; fi'
                         sh 'docker compose down || true'
-                        sh 'docker compose up -d --build'
+                        sh 'docker compose up -d'
                     } else {
+                        // On Windows Jenkins agent, create .env from .env.example if missing
+                        bat 'if not exist .env copy .env.example .env'
                         bat 'docker compose down'
-                        bat 'docker compose up -d --build'
+                        bat 'docker compose up -d'
                     }
                 }
             }
