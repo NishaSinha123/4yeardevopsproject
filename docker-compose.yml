@@ -11,8 +11,8 @@ services:
         required: false
     environment:
       - PORT=5000
-      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:npg_aTJ8X7owxmEi@ep-cold-thunder-aqpr7whh-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require}
-      - JWT_SECRET=${JWT_SECRET:-AasaMedChem_Secure_Jwt_Token_Secret_Key_2026}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
     restart: unless-stopped
 
   frontend:

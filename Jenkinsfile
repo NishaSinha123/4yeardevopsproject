@@ -5,8 +5,9 @@ pipeline {
         BACKEND_IMAGE   = "aasamedchem-backend"
         FRONTEND_IMAGE  = "aasamedchem-frontend"
         IMAGE_TAG       = "${BUILD_NUMBER}"
-        DATABASE_URL    = "postgresql://neondb_owner:npg_aTJ8X7owxmEi@ep-cold-thunder-aqpr7whh-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require"
-        JWT_SECRET      = "AasaMedChem_Secure_Jwt_Token_Secret_Key_2026"
+        // Securely injected from Jenkins Credentials (Secret text)
+        DATABASE_URL    = credentials('DATABASE_URL')
+        JWT_SECRET      = credentials('JWT_SECRET')
     }
 
     stages {
@@ -32,17 +33,44 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Running SonarQube code quality scan...'
+                script {
+                    // Requires SonarQube server configured under:
+                    // Manage Jenkins -> System -> SonarQube servers (name: 'SonarQube')
+                    // Manage Jenkins -> Tools -> SonarQube Scanner (name: 'sonar-scanner')
+                    try {
+                        def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                        withSonarQubeEnv('SonarQube') {
+                            if (isUnix()) {
+                                sh "${scannerHome}/bin/sonar-scanner"
+                            } else {
+                                bat "\"${scannerHome}\\bin\\sonar-scanner.bat\""
+                            }
+                        }
+                    } catch (Exception e) {
+                        echo "SonarQube tool step skipped or using fallback from PATH: ${e.message}"
+                        withSonarQubeEnv('SonarQube') {
+                            if (isUnix()) {
+                                sh 'sonar-scanner'
+                            } else {
+                                bat 'sonar-scanner'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Docker Build Images') {
             steps {
                 echo 'Building Docker images for Backend and Frontend...'
                 script {
                     if (isUnix()) {
-                        // Build Backend image
                         sh "docker build -f api/Dockerfile -t ${BACKEND_IMAGE}:${IMAGE_TAG} -t ${BACKEND_IMAGE}:latest ."
-                        // Build Frontend image
                         sh "docker build -f Dockerfile -t ${FRONTEND_IMAGE}:${IMAGE_TAG} -t ${FRONTEND_IMAGE}:latest ."
                     } else {
-                        // Build on Windows Jenkins agent
                         bat "docker build -f api/Dockerfile -t ${BACKEND_IMAGE}:${IMAGE_TAG} -t ${BACKEND_IMAGE}:latest ."
                         bat "docker build -f Dockerfile -t ${FRONTEND_IMAGE}:${IMAGE_TAG} -t ${FRONTEND_IMAGE}:latest ."
                     }
@@ -52,15 +80,32 @@ pipeline {
 
         stage('Deploy with Docker Compose') {
             steps {
-                echo 'Deploying application using Docker Compose...'
+                echo 'Deploying application using Docker Compose with secure credentials...'
                 script {
                     if (isUnix()) {
-                        sh 'cp .env.example .env'
+                        // Dynamically create .env from Jenkins credentials
+                        sh """
+                        cat <<EOF > .env
+PORT=5000
+DATABASE_URL=${DATABASE_URL}
+JWT_SECRET=${JWT_SECRET}
+NODE_ENV=production
+EOF
+                        """
                         sh 'docker rm -f aasamedchem-backend aasamedchem-frontend || true'
                         sh 'docker compose down || true'
                         sh 'docker compose up -d'
                     } else {
-                        bat 'copy /Y .env.example .env'
+                        // On Windows Jenkins agent, write secure .env dynamically
+                        bat """
+@echo off
+(
+echo PORT=5000
+echo DATABASE_URL=%DATABASE_URL%
+echo JWT_SECRET=%JWT_SECRET%
+echo NODE_ENV=production
+) > .env
+                        """
                         bat 'docker rm -f aasamedchem-backend aasamedchem-frontend 2>nul || exit 0'
                         bat 'docker compose down'
                         bat 'docker compose up -d'
@@ -72,7 +117,7 @@ pipeline {
 
     post {
         success {
-            echo "Build #${BUILD_NUMBER} completed and deployed successfully!"
+            echo "Build #${BUILD_NUMBER} completed, analyzed, and deployed successfully!"
         }
         failure {
             echo "Build #${BUILD_NUMBER} failed! Check console output for details."
