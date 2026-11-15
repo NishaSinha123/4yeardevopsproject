@@ -35,7 +35,7 @@ pipeline {
                 echo 'Running SonarQube code quality scan...'
                 script {
                     try {
-                        def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                        def scannerHome = tool 'SonarScanner'
                         withSonarQubeEnv('SonarQube') {
                             if (isUnix()) {
                                 sh "${scannerHome}/bin/sonar-scanner"
@@ -130,15 +130,13 @@ pipeline {
         }
         always {
             echo 'Cleaning up dangling Docker images...'
-            script {
-                try {
+            node {
+                script {
                     if (isUnix()) {
                         sh 'docker image prune -f || true'
                     } else {
                         bat 'docker image prune -f 2>nul || exit 0'
                     }
-                } catch (Exception e) {
-                    echo "Docker prune step skipped: ${e.message}"
                 }
             }
         }
