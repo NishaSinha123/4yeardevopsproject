@@ -130,14 +130,14 @@ pipeline {
         }
         always {
             echo 'Cleaning up dangling Docker images...'
-            node {
+            
                 script {
                     if (isUnix()) {
                         sh 'docker image prune -f || true'
                     } else {
                         bat 'docker image prune -f 2>nul || exit 0'
                     }
-                }
+                
             }
         }
     }
