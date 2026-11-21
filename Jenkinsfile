@@ -11,7 +11,7 @@ pipeline {
 
     stages {
 
-        // 1. Checkout source code from GitHub
+        // 1. Checkout source code
         stage('Checkout') {
             steps {
                 echo 'Checking out source code from GitHub...'
@@ -19,7 +19,7 @@ pipeline {
             }
         }
 
-        // 2. Install dependencies and build React application
+        // 2. Install dependencies and build application
         stage('Install Dependencies & Test Build') {
             steps {
                 echo 'Installing dependencies and building application...'
@@ -36,7 +36,7 @@ pipeline {
             }
         }
 
-        // 3. SonarQube code quality analysis
+        // 3. SonarQube code analysis
         stage('SonarQube Analysis') {
             steps {
                 echo 'Starting SonarQube code analysis...'
@@ -55,7 +55,28 @@ pipeline {
             }
         }
 
-        // 4. Build Docker images
+        // 4. NEW: Wait for SonarQube Quality Gate
+        stage('Quality Gate') {
+            steps {
+                echo 'Waiting for SonarQube Quality Gate result...'
+
+                timeout(time: 5, unit: 'MINUTES') {
+                    script {
+                        def qualityGate = waitForQualityGate()
+
+                        echo "SonarQube Quality Gate status: ${qualityGate.status}"
+
+                        if (qualityGate.status != 'OK') {
+                            error "Quality Gate failed: ${qualityGate.status}"
+                        }
+
+                        echo 'Quality Gate passed successfully!'
+                    }
+                }
+            }
+        }
+
+        // 5. Build Docker images
         stage('Docker Build Images') {
             steps {
                 echo 'Building Backend and Frontend Docker images...'
@@ -86,26 +107,22 @@ pipeline {
             }
         }
 
-        // 5. Deploy application using Docker Compose
+        // 6. Deploy using Docker Compose
         stage('Deploy with Docker Compose') {
             steps {
                 echo 'Deploying application using Docker Compose...'
 
-                script {
-
-                    // Load secrets from Jenkins Credentials
-                    withCredentials([
-                        string(
-                            credentialsId: 'DATABASE_URL',
-                            variable: 'SEC_DB_URL'
-                        ),
-                        string(
-                            credentialsId: 'JWT_SECRET',
-                            variable: 'SEC_JWT'
-                        )
-                    ]) {
-
-                        // Create .env file without exposing secrets in logs
+                withCredentials([
+                    string(
+                        credentialsId: 'DATABASE_URL',
+                        variable: 'SEC_DB_URL'
+                    ),
+                    string(
+                        credentialsId: 'JWT_SECRET',
+                        variable: 'SEC_JWT'
+                    )
+                ]) {
+                    script {
                         writeFile(
                             file: '.env',
                             text: """PORT=5000
@@ -115,10 +132,11 @@ NODE_ENV=production
 """
                         )
                     }
+                }
 
-                    echo 'Application environment configuration prepared.'
+                echo 'Application environment configuration prepared.'
 
-                    // Stop old containers and deploy updated application
+                script {
                     if (isUnix()) {
                         sh 'docker compose down'
                         sh 'docker compose up -d'
@@ -133,10 +151,9 @@ NODE_ENV=production
 
     // Post-build actions
     post {
-
         success {
             echo "Build #${BUILD_NUMBER} completed successfully!"
-            echo 'Application deployment completed.'
+            echo 'Quality Gate passed and application deployment completed.'
         }
 
         failure {
